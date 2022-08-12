@@ -1,0 +1,13 @@
+housingsv/
+housing
+demo
+__pycache__
+pruebas.ipynb
+secret.py
+*.pyc
+*.sqlite3
+*.exe
+*.pbix
+*.csv
+*.xlsx
+*.sql
