@@ -18,7 +18,7 @@ while True:
         pass
     print(hoy.time().minute)
 
-
-print('Iniciando Scrapeo...')
-# scraper()
-print('Scrapeo y actualizacion de data completo')
+if __name__ == '__main__':
+    print('Iniciando Scrapeo...')
+    scraper()
+    print('Scrapeo y actualizacion de data completo')
