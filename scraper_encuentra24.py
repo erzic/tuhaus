@@ -122,13 +122,11 @@ def scraper():
     df_master_limpio['parking'].fillna(str(np.max(df_master_limpio['parking'].astype(float))), inplace=True)
 
     df_master_limpio["fecha"] = [datetime.date.today()]*len(df_master_limpio)
-    df_master_limpio['lat'] = df_master_limpio['lat'].apply(lambda x: x.split(',')[0])
-    df_master_limpio['long'] = df_master_limpio['lat'].apply(lambda x: x.split(',')[-1])
+    df_master_limpio['lat'] = df_master_limpio['lat_long'].apply(lambda x: x.split(',')[0])
+    df_master_limpio['long'] = df_master_limpio['lat_long'].apply(lambda x: x.split(',')[-1])
 
 
     df_master_limpio.to_csv("encuentra24_ventas_casas.csv", encoding="utf-8", index=False)
-
-
 
 
     import sqlalchemy
