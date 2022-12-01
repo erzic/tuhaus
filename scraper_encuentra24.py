@@ -1,16 +1,13 @@
 import datetime
 from utilities import limpiar_precios,limpiar_m2, limpiar_location
-import matplotlib.pyplot as plt
-import seaborn as sns
 import numpy as np
 import requests
 from bs4 import BeautifulSoup
 import pandas as pd
 import unidecode
-from secret import db_data
 #from requests_html import HTMLSession
 
-def scraper():
+def scraper(test=True):
     df_master = pd.DataFrame()
     c=0
 
@@ -23,6 +20,9 @@ def scraper():
 
 
     while True:
+        if test and c==1:
+            break
+
         titulos = []
         precio = []
         location = []
@@ -39,10 +39,11 @@ def scraper():
             url_encuentra24 = "".join([url_short,new_page])
 
         response = requests.get(url_encuentra24)
+        print(f'Response: {response}')
 
         s = BeautifulSoup(response.text, "lxml")
 
-        articulos_casa = s.findAll("article", attrs={"itemprop": "itemListElement"})
+        articulos_casa = s.findAll("div", attrs={"class": "ann-ad-tile__cover"})
         try:
             next_page = s.find("a", attrs={"rel":"next"}).get("href")
         except:
@@ -52,7 +53,7 @@ def scraper():
 
         # sacamos cada casa en cada page
 
-        link_casas = s.findAll('a', attrs={'class':'ann-box-title', 'itemprop':'url'})
+        link_casas = s.findAll('div', attrs={'class':'ann-ad-tile__cover'})
 
         # recorremos cada casa en cada page
         
@@ -96,12 +97,14 @@ def scraper():
             df_temp_2['id_ext'] = link.get("href").split('?')[0].split("/")[-1]
             
             df_master = pd.concat([df_master, df_temp_2],ignore_index=True)
+            del(lat_long)
 
         c+=1
         #df_master.reset_index(inplace=True)
 
 
     df_master_limpio =  df_master.copy()
+    print(df_master_limpio.head())
 
     df_master_limpio["Precio:"]= df_master_limpio["Precio:"].apply(limpiar_precios)
     df_master_limpio["Precio/M² de construcción:"] = df_master_limpio["Precio/M² de construcción:"].apply(limpiar_precios)
@@ -115,6 +118,8 @@ def scraper():
     for i in ['localizacion', 'direccion_exacta', 'parking', 'beneficios_var', 'tipo_de_pisos', 'balcon_terraza']:
         df_master_limpio[i] = df_master_limpio[i].apply(lambda x: unidecode.unidecode(str(x)))
 
+
+
     df_master_limpio.replace('nan', np.nan, inplace=True)
     df_master_limpio['parking'].replace('Mas', np.nan, inplace=True)
     #df_master_limpio["precio_m2_de_terreno"] = df_master_limpio["precio_m2_de_terreno"].apply(lambda x: x.replace('$', ''))
@@ -122,23 +127,25 @@ def scraper():
     df_master_limpio['parking'].fillna(str(np.max(df_master_limpio['parking'].astype(float))), inplace=True)
 
     df_master_limpio["fecha"] = [datetime.date.today()]*len(df_master_limpio)
-    df_master_limpio['lat'] = df_master_limpio['lat_long'].apply(lambda x: x.split(',')[0])
-    df_master_limpio['long'] = df_master_limpio['lat_long'].apply(lambda x: x.split(',')[-1])
+    df_master_limpio['lat'] = df_master_limpio['lat_long'].apply(lambda x: str(x).split(',')[0])
+    df_master_limpio['long'] = df_master_limpio['lat_long'].apply(lambda x: str(x).split(',')[-1])
 
 
-    df_master_limpio.to_csv("encuentra24_ventas_casas.csv", encoding="utf-8", index=False)
+    
 
 
-    import sqlalchemy
-    database_username = db_data['database_username']
-    database_password = db_data['database_password']
-    database_ip = db_data['database_ip']
-    database_name = db_data['database_name']
-    database_connection = sqlalchemy.create_engine('mysql+mysqlconnector://{0}:{1}@{2}/{3}'.
-                                                format(database_username, database_password, 
-                                                        database_ip, database_name))
+    # import sqlalchemy
+    # database_username = db_data['database_username']
+    # database_password = db_data['database_password']
+    # database_ip = db_data['database_ip']
+    # database_name = db_data['database_name']
+    # database_connection = sqlalchemy.create_engine('mysql+mysqlconnector://{0}:{1}@{2}/{3}'.
+    #                                             format(database_username, database_password, 
+    #                                                     database_ip, database_name))
 
 
-    database_connection.execute('drop table if exists tuhausdb.casas_vigente;')
-    df_master_limpio.to_sql(con=database_connection, name='casas_vigente', if_exists='replace')
-    df_master_limpio.to_sql(con=database_connection, name='casas_hist', if_exists='append')
+    # database_connection.execute('drop table if exists tuhausdb.casas_vigente;')
+    # df_master_limpio.to_sql(con=database_connection, name='casas_vigente', if_exists='replace')
+    # df_master_limpio.to_sql(con=database_connection, name='casas_hist', if_exists='append')
+
+    return df_master_limpio
